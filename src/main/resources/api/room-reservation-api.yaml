@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: Room Reservation Service API
+  description: API for managing room reservations for Marvel Hospitality Management.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+  /reservations:
+    post:
+      summary: Confirm a room reservation
+      description: |
+        Confirms a new room reservation. 
+        - If mode of payment is CASH, confirms immediately.
+        - If CREDIT_CARD, verifies with credit card payment service.
+        - If BANK_TRANSFER, sets status to PENDING_PAYMENT.
+        Validates that reservation duration does not exceed 30 days.
+      operationId: confirmReservation
+      requestBody:
+        description: Reservation details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationRequest'
+      responses:
+        '200':
+          description: Reservation created successfully or pending payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResponse'
+        '400':
+          description: Invalid input (e.g., duration > 30 days)
+        '500':
+          description: Internal server error or payment service failure
+components:
+  schemas:
+    ReservationRequest:
+      type: object
+      required:
+        - customerName
+        - roomNumber
+        - startDate
+        - endDate
+        - roomSegment
+        - modeOfPayment
+      properties:
+        customerName:
+          type: string
+          description: Name of Customer
+          example: "Patricia Doe"
+        roomNumber:
+          type: string
+          description: Room Number
+          example: "101A"
+        startDate:
+          type: string
+          format: date
+          description: Reservation start date
+        endDate:
+          type: string
+          format: date
+          description: Reservation end date
+        roomSegment:
+          type: string
+          description: Segment of the room
+          enum:
+            - SMALL
+            - MEDIUM
+            - LARGE
+            - EXTRA_LARGE
+        modeOfPayment:
+          type: string
+          description: Method of payment
+          enum:
+            - CASH
+            - BANK_TRANSFER
+            - CREDIT_CARD
+        paymentReference:
+          type: string
+          description: reference for the payment (e.g. check number, transaction id)
+    
+    ReservationResponse:
+      type: object
+      properties:
+        reservationId:
+          type: string
+          description: Unique identifier for the reservation
+        status:
+          type: string
+          description: Current status of the reservation
+          enum:
+            - PENDING_PAYMENT
+            - CONFIRMED
+            - CANCELLED
