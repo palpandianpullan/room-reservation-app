@@ -16,21 +16,14 @@ A Spring Boot microservice for managing room reservations for Marvel Hospitality
 - Automatically confirms reservations when full payment is received
 - Supports partial payments with cumulative tracking
 
+[Credit Card Payment Service](https://github.com/palpandianpullan/credit-card-payment-service.git)
+
 ### 3. Automatic Cancellation
 - Scheduled task runs daily at 2 AM
 - Cancels bank transfer reservations that haven't received full payment 2 days before start date
 
-### Technology Stack
-
-- **Framework**: Spring Boot 3.1.5
-- **Java**: 17
-- **Database**: H2 (in-memory)
-- **Messaging**: Apache Kafka
-- **API Specification**: OpenAPI 3.0
-- **Code Generation**: OpenAPI Generator Maven Plugin
-
 ## API Specification
-room-reservation-api/src/main/resources/openapi/openapi.yaml
+room-reservation-app/src/main/resources/openapi/openapi.yaml
 
 ### Request Example
 
@@ -106,16 +99,31 @@ reservation.cancellation.cron=0 0 2 * * *
 - Kafka (for event processing)
 - Credit Card Payment API running on port 9090
 
+
+
 ### Build:
 
 ```bash
 mvn clean install
 ```
 
-### Run:
+### Run without docker:
 
 ```bash
 mvn spring-boot:run
+```
+
+### Run with docker:
+
+Dockercompose will take care of building the image and running the container.
+run zookeeper and kafka first.
+run credit card payment app from another terminal.
+run room reservation app.
+
+--docker-compose down
+
+```bash
+docker-compose up --build
 ```
 
 ## Access H2 Console (Development Only)
@@ -179,9 +187,5 @@ curl -X POST http://localhost:8090/reservations \
 - Runs on port 9090
 
 
-## Quick Links
-
-- 🏗️ **Build:** Run `mvn clean install`
-- 🚀 **Run:** Run `mvn spring-boot:run`
 
 
