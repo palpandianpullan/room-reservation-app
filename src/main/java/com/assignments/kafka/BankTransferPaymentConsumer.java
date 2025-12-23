@@ -46,7 +46,6 @@ public class BankTransferPaymentConsumer {
 
         } catch (Exception e) {
             logger.error("Error processing bank transfer payment event: {}", e.getMessage(), e);
-            // In production, you might want to send to a dead letter queue
         }
     }
 }

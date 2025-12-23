@@ -83,4 +83,28 @@ class ReservationControllerTest {
                                 .andExpect(jsonPath("$.error").value("Bad Request"))
                                 .andExpect(jsonPath("$.message").value("Invalid reservation duration"));
         }
+
+        @Test
+        void testConfirmReservation_creditCardPaymentFailed() throws Exception {
+                // Given
+                ReservationRequest request = new ReservationRequest();
+                request.setCustomerName("Test Customer");
+                request.setRoomNumber("101");
+                request.setStartDate(LocalDate.now());
+                request.setEndDate(LocalDate.now().plusDays(2));
+                request.setRoomSegment(ReservationRequest.RoomSegmentEnum.SMALL);
+                request.setModeOfPayment(ReservationRequest.ModeOfPaymentEnum.CREDIT_CARD);
+
+                when(reservationService.confirmReservation(any(), any(), any(), any(), any(), any(), any()))
+                                .thenThrow(new RuntimeException("Credit card payment failed"));
+
+                // When/Then
+                mockMvc.perform(post("/reservations")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().is5xxServerError())
+                                .andExpect(jsonPath("$.error").value("Internal Server Error"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("An unexpected error occurred. Please try again later."));
+        }
 }

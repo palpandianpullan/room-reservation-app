@@ -99,7 +99,7 @@ class ReservationServiceIntegrationTest {
         reservationService.processBankTransferPayment(reservationId, totalAmount);
 
         // Then
-        ReservationEntity updatedReservation = reservationRepository.findById(reservationId).orElseThrow();
+        ReservationEntity updatedReservation = reservationRepository.findByReservationId(reservationId).orElseThrow();
         assertEquals(ReservationEntity.ReservationStatus.CONFIRMED, updatedReservation.getStatus());
         assertEquals(totalAmount, updatedReservation.getAmountReceived());
     }
@@ -127,7 +127,7 @@ class ReservationServiceIntegrationTest {
         reservationService.processBankTransferPayment(reservationId, partialPayment);
 
         // Then - Should still be pending
-        ReservationEntity updatedReservation = reservationRepository.findById(reservationId).orElseThrow();
+        ReservationEntity updatedReservation = reservationRepository.findByReservationId(reservationId).orElseThrow();
         assertEquals(ReservationEntity.ReservationStatus.PENDING_PAYMENT, updatedReservation.getStatus());
         assertEquals(partialPayment, updatedReservation.getAmountReceived());
 
@@ -174,5 +174,50 @@ class ReservationServiceIntegrationTest {
 
         // Then
         assertEquals("P4145478", reservationId);
+    }
+
+    @Test
+    void testCancelUnpaidReservations() {
+        // Given
+        // Create a reservation that starts tomorrow (which is WITHIN the 2 days buffer)
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = startDate.plusDays(2);
+
+        ReservationEntity reservation = reservationService.confirmReservation(
+                "Late Payer",
+                "606F",
+                startDate,
+                endDate,
+                ReservationEntity.RoomSegment.SMALL,
+                ReservationEntity.ModeOfPayment.BANK_TRANSFER,
+                null);
+
+        String reservationId = reservation.getReservationId();
+
+        // Create another reservation that starts in 10 days (OUTSIDE the buffer)
+        LocalDate farStartDate = LocalDate.now().plusDays(10);
+        ReservationEntity farReservation = reservationService.confirmReservation(
+                "Future Guest",
+                "707G",
+                farStartDate,
+                farStartDate.plusDays(2),
+                ReservationEntity.RoomSegment.SMALL,
+                ReservationEntity.ModeOfPayment.BANK_TRANSFER,
+                null);
+        String farReservationId = farReservation.getReservationId();
+
+        // When
+        // Execute the cancellation logic
+        reservationService.cancelUnpaidReservations();
+
+        // Then
+        // The one starting tomorrow should be cancelled
+        ReservationEntity cancelledReservation = reservationRepository.findByReservationId(reservationId).orElseThrow();
+        assertEquals(ReservationEntity.ReservationStatus.CANCELLED, cancelledReservation.getStatus());
+
+        // The one starting in 10 days should still be pending
+        ReservationEntity pendingReservation = reservationRepository.findByReservationId(farReservationId)
+                .orElseThrow();
+        assertEquals(ReservationEntity.ReservationStatus.PENDING_PAYMENT, pendingReservation.getStatus());
     }
 }
